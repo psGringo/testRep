@@ -1,0 +1,121 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DelegateCovariance
+{
+
+    
+
+    class Program
+    {
+
+        public delegate Car ObtainCarDelegate();
+        public delegate SportsCar ObtainSportsCarDelegate();
+
+        public delegate Car ObtainVehicleDelegate();
+
+        public static Car GetBasicCar() { return new Car("123", 100, 55);}
+        public static SportsCar GetSportsCar(){return new SportsCar("123", 100, 55);}
+
+        static void Main(string[] args)
+        {
+            
+            ObtainCarDelegate targetA = new ObtainCarDelegate(GetBasicCar); // <<<
+            Car c = targetA();
+            Console.WriteLine("Obtained a  {0} ",c);
+           // Console.ReadLine();
+
+            ObtainSportsCarDelegate targetB = new ObtainSportsCarDelegate(GetSportsCar);
+            SportsCar sc = targetB();
+            Console.WriteLine("Obtained a  {0} ", sc);
+           // Console.ReadLine();
+
+
+            //covariance here - it uses inheritance of Car and Sports Car
+            ObtainVehicleDelegate targetA1 = new ObtainVehicleDelegate(GetBasicCar);
+            Car c1 = targetA1();
+            Console.WriteLine("Obtained a  {0} ", c1);
+
+            ObtainVehicleDelegate targetB1 = new ObtainVehicleDelegate(GetSportsCar);
+            Car c2 = targetB1();
+            Console.WriteLine("Obtained a  {0} ", c2);
+
+            Console.ReadLine();
+
+
+        }
+
+     
+
+    }
+
+
+
+    public class Car
+    {
+
+        public int ID { get; set; }
+        public int Speed { get; set; }
+        public string Name { get; set; }
+
+
+
+        public Car(string name, int speed, int id)
+        {
+            Name = name;
+            Speed = speed;
+            ID = id;
+        }
+        public Car() { }
+
+
+    }
+
+
+    public class SportsCar : Car
+    {
+        public SportsCar() { }
+        public SportsCar(string name, int speed, int id) : base(name, speed, id)
+        {
+        }
+        
+
+    }
+
+
+    class SomeClass
+    {
+        public delegate Car ObtainCarDelegate();
+        private ObtainCarDelegate CarlistOfHandlers;
+        public void RegisterHandlerCarDelegate(ObtainCarDelegate method) { CarlistOfHandlers += method; }
+
+        // delegate block
+        public delegate void SomeDelegate(string Amessage);
+        private SomeDelegate listOfHandlers;
+        public void RegisterHandler(SomeDelegate method) { listOfHandlers += method; }
+        public void UnRegisterHandler(SomeDelegate method) { listOfHandlers -= method; }
+
+
+        //do something in class
+        public void SomeMethod()
+        {
+            //some code
+            if (listOfHandlers != null) { listOfHandlers("hello from delegate method"); }
+            //some code
+
+        }
+
+        public void SomeCarMethod()
+        {
+            //some code
+            if (listOfHandlers != null) {  }
+            //some code
+
+        }
+
+
+    }
+}
