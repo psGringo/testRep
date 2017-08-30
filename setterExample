@@ -1,7 +1,7 @@
     class Person
     {
-        int age;        
-        public int Age { get { return age; } set { if (checkAge(value)) age = value; else {/*do something*/ }  } }
-        public bool checkAge(int Aage) { if (Aage >= 18) { return true; } else { return false; } }
-        Person(int Aage) { if (checkAge(Aage)) age = Aage; else {/*do something*/ } }
+        int age; // field        
+        public int Age { get { return age; } set { if (checkAge(value)) age = value; else {/*do something*/ }  } } // proprty
+        public bool checkAge(int Aage) { if (Aage >= 18) { return true; } else { return false; } } // method
+        Person(int Aage) { if (checkAge(Aage)) age = Aage; else {/*do something*/ } } // constructor
     }
