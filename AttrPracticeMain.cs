@@ -14,10 +14,11 @@ namespace AttrPracticeMain
         static void Main(string[] args)
         {
             ReflectOnAttributesUsingEarlyBinding(); // early binding
-            EvenNumbersWithIteration();
+            EvenNumbersWithIteration(); // late binding
             NotEvenNumbers(); // late binding
             EvenNumbers(); // late binding
             EvenNotEvenOrBoth(); // late binding
+            EvenOddOrBothToProps(); //late binding
             Console.ReadLine();
 
         }
@@ -122,7 +123,8 @@ namespace AttrPracticeMain
             Type TAllNumbers = asm.GetType("Numbers.AllNumbers");
             PropertyInfo pi = TCustomAttribute.GetProperty("Description");
 
-            var myCustomAttribute = TAllNumbers.GetCustomAttribute(TCustomAttribute);
+            var myCustomAttribute = TAllNumbers.GetCustomAttribute(TCustomAttribute);           
+
 
 
 
@@ -194,5 +196,82 @@ namespace AttrPracticeMain
         }
 
 
-    }
+        //---------------
+
+        static void EvenOddOrBothToProps()
+        {
+            // load and define types
+            Assembly asm = Assembly.LoadFile("C:\\C#\\MyC#StudyProjects\\08_Attributes\\Practice\\AttrPracticeMain\\AttrPracticeMain\\bin\\Debug\\Numbers.dll");
+            Type TCustomAttribute = asm.GetType("Numbers.CustomAttribute");
+            Type TAllNumbers = asm.GetType("Numbers.AllNumbers");
+            PropertyInfo pi = TCustomAttribute.GetProperty("Description");
+            var myCustomAttribute = TAllNumbers.GetCustomAttribute(TCustomAttribute);
+
+            //creating instance
+            object EvenNumbersObject = Activator.CreateInstance(TAllNumbers);
+
+            // reading props and filling arrays
+            PropertyInfo[] piArray = TAllNumbers.GetProperties();
+
+            foreach (PropertyInfo p in piArray)
+            {
+                var propAttr = p.GetCustomAttribute(TCustomAttribute);
+
+                //if (propAttr!=null) continue;
+
+                if ((propAttr != null)&&(pi.GetValue(propAttr, null).ToString() == "Even"))
+                {
+                
+                    (EvenNumbersObject as AllNumbers).IntArray = new int[]
+                    {
+                            2,
+                            4,
+                            6
+                    };
+
+                }
+
+                if ((propAttr != null)&&(pi.GetValue(propAttr, null).ToString() == "Odd"))
+                {
+                    // create instance and fill with evens                 
+                    (EvenNumbersObject as AllNumbers).AnotherIntArray = new int[]
+                    {
+                            1,
+                            3,
+                            5
+                    };
+
+                }
+
+          
+            }
+
+
+            //check
+            foreach (int i in (EvenNumbersObject as AllNumbers).IntArray)
+                Console.WriteLine(i);
+                Console.WriteLine(" ");
+            foreach (int i in (EvenNumbersObject as AllNumbers).AnotherIntArray)
+                Console.WriteLine(i);
+
+
+
+        }
+
+   
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
 }
