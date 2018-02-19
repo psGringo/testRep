@@ -1,0 +1,65 @@
+function TForecastCalc.SeasonalityCount(aDayOfWeek, MDaysOfWeekPast, aDeviceID, aGoodID: integer; aMean: double): double;
+var
+  dates, datesAllDays: TArray<TDate>;
+  salesCount, salesAllDays: Tarray<double>;
+  count: integer;
+  tempDate: TDate;
+  daySalesCount: integer;
+  globalCount: integer;
+  meanDayOfWeek: double;
+  meanAllDays: double;
+begin
+  result := -1.0;
+  globalCount := 0;
+  {
+  Сезонность = средняя арифметическая продаж фактических за определенный день недели за предыдущие M дней / средняя, т.е. это отклонение средних продаж за понедельник от средней, отклонение средних продаж за вторник от средней и т.д. (М выводим в настройки прогноза)
+Примечание. При расчете средней арифметической продаж фактических за определенный день недели за предыдущие М дней исключаем из расчета выходные дни, которые прописываем в Настройках магазинов, и дни, когда продажи по товару = 0.
+М = количество понедельников, количество вторников и других дней недели, которое нужно взять для расчета. Например, если М = 4, то мы берем не период с 22.01.18 по 25.01.18, а четыре недели. При этом, если в какой-то день недели был выходной или продажи = 0, то для этого дня недели берем уже период в 5 недель.
+  }
+
+{ // из переписки Вконтакте
+ШАГ 1.
+Среднее по выбранному дню недели.
+Допустим сегодня вт. 30 янв. 2018
+M=4
+Отсчитываем 4 вторника назад с не нулевыми продажами. (ред.)
+Оказываемся в 9 января 2018 г.
+считаем среднее за 4 вторника
+Шаг 2.
+Считаем среднее с 30 янв. 2018 по 9 января, исключая выходные и дни с нулевыми продажами
+Шаг 3 = Шаг1/ Шаг 2
+
+Руслан
+На Шаге 2 может быть и другой период. Там свой М
+Средняя может быть и за год. Параметр настраивается отдельно.
+}
+
+  // http://www.delphibasics.ru/DayOfTheWeek.php
+  // 1 - monday, 2 Tuesday...
+  count := 0;
+  tempDate := DateOf(TCommon.getLocalBiasedDateTime);
+  // #1 meanDayOfWeek
+  repeat
+    if (DayOfTheWeek(tempDate) = aDayOfWeek) //
+      and not (isDayInOffDays(tempDate, aDeviceID)) //
+      and (IsSalesPositiveCount(tempDate, aDeviceID, aGoodID, daySalesCount)) then
+    begin
+      // add dates
+      SetLength(dates, length(dates) + 1);
+      dates[high(dates)] := tempDate;
+      // add sales
+      SetLength(salesCount, length(salesCount) + 1);
+      salesCount[high(salesCount)] := daySalesCount;
+      inc(count);
+    end;
+    tempDate := IncDay(tempDate, -1);
+    inc(globalCount);
+  until (count >= MDaysOfWeekPast) or (globalCount >= FMaxDaysBack);
+
+  if (Length(salesCount) > 0) and (length(salesCount) >= MDaysOfWeekPast) and (aMean > 0) then
+  begin
+    meanDayOfWeek := Math.Mean(salesCount); // << mean of sales of day of the week
+    result := (meanDayOfWeek) / (aMean);
+  end;
+
+end;
