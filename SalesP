@@ -1,0 +1,89 @@
+function TForecastCalc.SalesP(aDeviceID, aGoodID: integer): integer;
+
+  procedure getStartFinishHour(aDeviceID: integer; var startHour: integer; var finishHour: integer);
+  var
+    q: TFDQuery;
+  begin
+    q := TFDQuery.Create(Self);
+    try
+      with q do
+      begin
+        Connection := UniMainModule.DB.FDConnection;
+        SQL.Text := 'select * from workingHours where devices_id=:devices_id';
+        params.ParamValues['devices_id'] := aDeviceID;
+        Disconnect();
+        Open();
+        startHour := HourOf(FieldByName('start').AsDateTime);
+        finishHour := HourOf(FieldByName('finish').AsDateTime);
+        Close();
+      end;
+    finally
+      q.Free();
+    end;
+  end;
+
+  function getCurrentSales(aYear, aMonth, aDayNumber, aGoodID, aDeviceID: integer): integer;
+  var
+    q: TFDQuery;
+    dayFieldName: string;
+  begin
+    q := TFDQuery.Create(nil);
+    try
+      with q do
+      begin
+        connection := UniMainModule.DB.FDConnection;
+        sql.Text := 'SELECT * FROM salesforecast_db.salesbyday where year=:year and month=:month ' + //
+          ' and goods_id=:goods_id and devices_id=:devices_id;';
+        params.paramValues['year'] := aYear;
+        params.paramValues['month'] := aMonth;
+        params.paramValues['goods_id'] := aGoodID;
+        params.paramValues['devices_id'] := aDeviceID;
+        Disconnect();
+        Open();
+        dayFieldName := 'day' + aDayNumber.ToString;
+        Result := FieldByName(dayFieldName).AsInteger;
+        Close();
+      end;
+    finally
+      q.Free();
+    end;
+  end;
+
+var
+  currWorkHours: integer;
+  finishHour: Integer;
+  startHour: Integer;
+  currHour: Word;
+  salesF: Integer;
+  year: Word;
+  month: Word;
+  day: Word;
+  maxWorkHours: integer;
+begin
+  result := -1;
+// hours, device worked at this moment
+   // start hour for device
+  getStartFinishHour(aDeviceID, startHour, finishHour);
+  currHour := HourOf(UniMainModule.LocalBiasedDateTime);
+  maxWorkHours := finishHour - startHour;
+  if currHour <= finishHour then
+    currWorkHours := HourOf(UniMainModule.LocalBiasedDateTime) - startHour
+  else
+    currWorkHours := finishHour;
+  //curr sales
+  year := YearOf(UniMainModule.LocalBiasedDateTime);
+  month := MonthOf(UniMainModule.LocalBiasedDateTime);
+  day := DayOf(UniMainModule.LocalBiasedDateTime);
+//  day := DayOf(IncDay(DayOf(UniMainModule.LocalBiasedDateTime), -1)); // for test
+  salesF := getCurrentSales(year, month, day, aGoodID, aDeviceID);
+  if currWorkHours <> 0 then
+    result := Math.Ceil(salesF * (maxWorkHours / currWorkHours));
+{
+SaleP = ОКРУГЛВВЕРХ (SaleF * (Общее количество часов работы точки/Количество часов, которое уже прошло);0)
+Например, Сокол работает с 10.00 до 20.00. Итого 10 часов.
+Прогноз делаем в 16.00. На этот момент продано 40 молока (SaleF).
+SaleP = ОКРУГЛВВЕРХ (40 * ((20-10)/(16-10));0) = ОКРУГЛВВЕРХ (40 * (10/6);0) = ОКРУГЛВВЕРХ (66.66;0) = 67
+Как только рабочий день прошел SaleP = SaleF
+
+}
+end;
