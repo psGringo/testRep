@@ -1,0 +1,98 @@
+function calcTodayAutoCorrection(aMean, aSeasonality, aAction: double; //
+    var forecastError: double; var yesterdayAutoCorrection: Double; //
+    var yesterdaySalesCountFact, YesterdaySalesCountForeCast, todaySalesCountFact: integer): double;
+  var
+    minBorder, maxBorder: integer;
+    PositiveCorrection, NegativeCorrection: double;
+    year: Word;
+    month: Word;
+    idIsFlush: Integer;
+    manualAutoCorrection: Double;
+  begin
+    getAutoCorrectionParams(minBorder, maxBorder, NegativeCorrection, PositiveCorrection);
+    yesterdaySalesCountFact := getYesterdayFactSalesCount;
+    yesterdaySalesCountForeCast := getYesterdaySalesCountForeCast(aMean, aSeasonality, aAction);    //
+    todaySalesCountFact := getTodayFactSalesCount2();
+      // forecastError := ((yesterdaySalesCountFact / yesterdaySalesCountForeCast) - 1) * 100;
+    yesterdayAutoCorrection := getYesterdayAutoCorrection;
+    //
+    forecastError := -1;
+    if YesterdaySalesCountForeCast <> 0 then
+      forecastError := ((yesterdaySalesCountFact / YesterdaySalesCountForeCast) - 1) * 100;
+    // is manual autocorrection
+    if getTodayFinishResiduals() <= 0 then
+    begin
+      if isManualAutoCorrection(manualAutoCorrection) then
+      begin
+        result := manualAutoCorrection
+      end
+      else
+      begin
+        result := yesterdayAutoCorrection + PositiveCorrection;
+      end;
+      if result < 0.5 then
+        result := 0.5;
+      if result > 2 then
+        result := 2;
+    end
+    else
+    begin
+      if (YesterdaySalesCountForeCast <> -1.00) and (yesterdayAutoCorrection <> -1.00) //
+        and (yesterdaySalesCountFact <> -1.00) then
+      begin
+        // if residuals on today <=0 then
+        year := YearOf(aTodayDate);
+        month := MonthOf(aTodayDate);
+        if forecastError < minBorder then
+        begin
+          if isManualAutoCorrection(manualAutoCorrection) then
+          begin
+            result := manualAutoCorrection
+          end
+          else
+          begin
+            result := yesterdayAutoCorrection + PositiveCorrection;
+          end;
+          if result < 0.5 then
+            result := 0.5;
+          if result > 2 then
+            result := 2;
+        end;
+        if forecastError > maxBorder then
+        begin
+          if isManualAutoCorrection(manualAutoCorrection) then
+          begin
+            result := manualAutoCorrection
+          end
+          else
+          begin
+            result := yesterdayAutoCorrection - NegativeCorrection;
+          end;
+          if result < 0.5 then
+            result := 0.5;
+          if result > 2 then
+            result := 2;
+        end
+        else if (forecastError >= minBorder) and (forecastError <= maxBorder) then
+        begin
+          if isManualAutoCorrection(manualAutoCorrection) then
+          begin
+            result := manualAutoCorrection
+          end
+          else
+          begin
+            result := yesterdayAutoCorrection;
+          end;
+          if result < 0.5 then
+            result := 0.5;
+          if result > 2 then
+            result := 2;
+        end;
+      end
+      else
+      begin
+        result := 1.00;
+      // write to DB
+      end;
+    end;
+  end;
